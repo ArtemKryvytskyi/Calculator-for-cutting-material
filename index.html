@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calculator for cutting material</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <div class="container">
+    <h1>Calculator for cutting material</h1>
+
+    <div class="input-section">
+      <label for="materialLength">Length:</label>
+      <input type="number" id="materialLength" placeholder="Enter the length in mm" required>
+    </div>
+
+    <div class="input-section">
+      <label for="pieces">Required dimensions (separated by commas, ):</label>
+      <input type="text" id="pieces" placeholder="Enter the length of the parts, for example: 30,40,20 " required>
+    </div>
+
+    <button id="calculateButton">Рассчитать</button>
+
+    <div id="result" class="result-section">
+      <h2>Result</h2>
+      <div id="cuts"></div>
+      <div id="materialUsed"></div>
+      <p id="rollsNeeded"></p>
+      <p id="leftover"></p>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+
+</html>
