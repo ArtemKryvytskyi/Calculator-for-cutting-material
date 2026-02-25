@@ -13,10 +13,11 @@
     <h2>Slat Cutting</h2>
 
     <div class="form-group">
-      <input type="text" id="color" placeholder="Цвет">
       <input type="number" id="size" placeholder="Размер">
       <input type="number" id="qty" placeholder="Количество">
       <input type="number" id="stock" value="2900" placeholder="Длина заготовки">
+      <input type="number" id="manualLeftover" placeholder="Добавить остаток">
+      <button onclick="addManualLeftover()">+</button>
       <button onclick="addItem()">Добавить</button>
     </div>
 
@@ -30,7 +31,7 @@
       <tbody></tbody>
     </table>
 
-    <button class="calculate-btn" onclick="calculate()">Рассчитать</button>
+    <button class="calculate-btn" onclick="calculate()">Показать варианты</button>
 
     <div id="result" class="result"></div>
   </div>
