@@ -1,19 +1,18 @@
 // =======================
-// Глобальные переменные
+// slat.js — профессиональная версия
 // =======================
 
+// Глобальные переменные
 let items = [];
-let generatedCombinations = [];
 let leftoverStocks = [];
-
+let generatedCombinations = [];
 let historyLog = [];
 let totalNewStocksUsed = 0;
 let totalLeftoversUsed = 0;
 
 // =======================
-// Добавление детали
+// Добавление деталей
 // =======================
-
 function addItem() {
   const size = parseInt(document.getElementById("size").value);
   const qty = parseInt(document.getElementById("qty").value);
@@ -21,12 +20,10 @@ function addItem() {
   if (isNaN(size) || isNaN(qty) || size <= 0 || qty <= 0) return;
 
   const existing = items.find(i => i.size === size);
-
   if (existing) existing.qty += qty;
   else items.push({ size, qty });
 
   renderItemsTable();
-
   document.getElementById("size").value = "";
   document.getElementById("qty").value = "";
 }
@@ -34,7 +31,6 @@ function addItem() {
 // =======================
 // Добавление остатка вручную
 // =======================
-
 function addManualLeftover() {
   const value = parseInt(document.getElementById("manualLeftover").value);
   if (isNaN(value) || value <= 0) return;
@@ -44,7 +40,8 @@ function addManualLeftover() {
 }
 
 // =======================
-
+// Отображение таблицы деталей
+// =======================
 function renderItemsTable() {
   const tbody = document.querySelector("#itemsTable tbody");
   tbody.innerHTML = "";
@@ -57,78 +54,80 @@ function renderItemsTable() {
 }
 
 // =======================
-// Запуск генерации
+// Запуск расчёта
 // =======================
-
 function calculate() {
   historyLog = [];
   totalNewStocksUsed = 0;
   totalLeftoversUsed = 0;
-
   generateVariants();
 }
 
 // =======================
-// Генерация вариантов
+// Генерация уникальных вариантов
 // =======================
-
 function generateVariants() {
   const stockLength = parseInt(document.getElementById("stock").value);
   if (!stockLength) return;
 
-  let activeSizes = items.filter(i => i.qty > 0).map(i => i.size);
+  // Активные размеры
+  const activeSizes = items.filter(i => i.qty > 0).map(i => i.size);
   if (activeSizes.length === 0) {
     showFinalSummary();
     return;
   }
 
+  // Сортировка по убыванию для оптимизации
   activeSizes.sort((a, b) => b - a);
 
   let allCombinations = [];
 
-  // Новая заготовка
-  generateEfficientCombinations(activeSizes, stockLength)
-    .forEach(c => {
-      allCombinations.push({
-        ...c,
-        source: "new",
-        sourceLabel: "Новая заготовка"
-      });
+  // 1️⃣ Новая заготовка
+  generateEfficientCombinations(activeSizes, stockLength).forEach(c => {
+    allCombinations.push({
+      ...c,
+      sourceLabel: "Новая заготовка",
+      source: "new"
     });
-
-  // Остатки
-  leftoverStocks.forEach((leftover, index) => {
-    generateEfficientCombinations(activeSizes, leftover)
-      .forEach(c => {
-        allCombinations.push({
-          ...c,
-          source: "leftover",
-          sourceLabel: "Обрезок " + leftover + " мм",
-          leftoverIndex: index
-        });
-      });
   });
 
-  // 🔥 Сортировка по остатку
-  allCombinations.sort((a, b) => a.remaining - b.remaining);
+  // 2️⃣ Остатки
+  leftoverStocks.forEach((leftover, index) => {
+    generateEfficientCombinations(activeSizes, leftover).forEach(c => {
+      allCombinations.push({
+        ...c,
+        sourceLabel: `Обрезок ${leftover} мм`,
+        source: "leftover",
+        leftoverIndex: index
+      });
+    });
+  });
 
-  renderCombinations(allCombinations);
+  // 🔹 Исключаем дубли
+  const unique = {};
+  allCombinations.forEach(c => {
+    const key = [...c.pieces].sort((a, b) => a - b).join("-") + "|" + c.remaining;
+    unique[key] = c;
+  });
+  const uniqueCombinations = Object.values(unique);
+
+  // 🔹 Сортировка по остатку (меньший сначала)
+  uniqueCombinations.sort((a, b) => a.remaining - b.remaining);
+
+  renderCombinations(uniqueCombinations);
 }
 
 // =======================
-// Алгоритм перебора
+// Генерация комбинаций (backtracking)
 // =======================
-
 function generateEfficientCombinations(sizes, stockLength) {
   const results = [];
 
   function backtrack(start, current, sum) {
     const remaining = stockLength - sum;
-
     if (current.length > 0 && remaining >= 0) {
       results.push({ pieces: [...current], remaining });
     }
-
     for (let i = start; i < sizes.length; i++) {
       if (sum + sizes[i] <= stockLength) {
         current.push(sizes[i]);
@@ -145,10 +144,8 @@ function generateEfficientCombinations(sizes, stockLength) {
 // =======================
 // Отображение вариантов
 // =======================
-
 function renderCombinations(combos) {
   const resultDiv = document.getElementById("result");
-
   if (combos.length === 0) {
     showFinalSummary();
     return;
@@ -156,7 +153,8 @@ function renderCombinations(combos) {
 
   generatedCombinations = combos;
 
-  let html = "<h3>Выберите вариант:</h3>";
+  let html = renderHistory();
+  html += "<h3>Выберите вариант раскроя:</h3>";
 
   combos.forEach((c, i) => {
     html += `
@@ -170,39 +168,55 @@ function renderCombinations(combos) {
     `;
   });
 
-  resultDiv.innerHTML = renderHistory() + html;
+  resultDiv.innerHTML = html;
 }
 
 // =======================
-// Применение варианта
+// Применение выбранного варианта (максимальное использование)
 // =======================
-
 function applyCombination(index) {
   const selected = generatedCombinations[index];
 
-  // списываем детали
-  selected.pieces.forEach(piece => {
-    const found = items.find(i => i.size === piece && i.qty > 0);
-    if (found) found.qty--;
+  // Копия текущих деталей
+  let remainingItems = JSON.parse(JSON.stringify(items));
+
+  // Подсчёт максимально возможного применения
+  let minQty = Infinity;
+  selected.pieces.forEach(p => {
+    const item = remainingItems.find(i => i.size === p);
+    if (item) minQty = Math.min(minQty, item.qty);
+    else minQty = 0;
   });
 
-  // если использован обрезок — удалить его
+  if (minQty === 0) return; // невозможно применить
+
+  // Используем обрезки, если есть
   if (selected.source === "leftover") {
     leftoverStocks.splice(selected.leftoverIndex, 1);
-    totalLeftoversUsed++;
+    totalLeftoversUsed += minQty;
   } else {
-    totalNewStocksUsed++;
+    totalNewStocksUsed += minQty;
   }
 
-  // сохраняем новый остаток
+  // Списываем детали
+  selected.pieces.forEach(p => {
+    const item = remainingItems.find(i => i.size === p);
+    if (item) item.qty -= minQty;
+  });
+
+  // Добавляем остатки
   if (selected.remaining > 0) {
-    leftoverStocks.push(selected.remaining);
+    for (let i = 0; i < minQty; i++) leftoverStocks.push(selected.remaining);
   }
 
+  items = remainingItems;
+
+  // Сохраняем этап в истории
   historyLog.push({
     pieces: selected.pieces,
     remaining: selected.remaining,
-    source: selected.sourceLabel
+    source: selected.sourceLabel,
+    count: minQty
   });
 
   renderItemsTable();
@@ -210,42 +224,36 @@ function applyCombination(index) {
 }
 
 // =======================
-// История этапов
+// Отображение истории
 // =======================
-
 function renderHistory() {
   if (historyLog.length === 0) return "";
 
   let html = "<h3>Этапы раскроя:</h3>";
-
   historyLog.forEach((step, index) => {
     html += `
       <div style="margin-bottom:5px;">
-        ${index + 1}) ${step.pieces.join(" + ")}
-        | Остаток: ${step.remaining} мм
+        ${index + 1}) ${step.pieces.join(" + ")} 
+        | применено: ${step.count} раз 
+        | остаток: ${step.remaining} мм
         | ${step.source}
       </div>
     `;
   });
-
   html += "<hr>";
   return html;
 }
 
 // =======================
-// Финальный итог
+// Финальная статистика
 // =======================
-
 function showFinalSummary() {
   const resultDiv = document.getElementById("result");
-
   let html = renderHistory();
-
   html += `
     <h3>Раскрой завершён</h3>
     <p>Использовано новых заготовок: <b>${totalNewStocksUsed}</b></p>
     <p>Использовано обрезков: <b>${totalLeftoversUsed}</b></p>
   `;
-
   resultDiv.innerHTML = html;
 }
