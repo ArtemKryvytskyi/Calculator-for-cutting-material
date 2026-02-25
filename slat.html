@@ -12,15 +12,24 @@
   <div class="container">
     <h2>Slat Cutting</h2>
 
+    <!-- ГРУППА 1: Основные детали -->
     <div class="form-group">
+      <h4>Детали</h4>
       <input type="number" id="size" placeholder="Размер">
       <input type="number" id="qty" placeholder="Количество">
       <input type="number" id="stock" value="2900" placeholder="Длина заготовки">
-      <input type="number" id="manualLeftover" placeholder="Добавить остаток">
-      <button onclick="addManualLeftover()">+</button>
       <button onclick="addItem()">Добавить</button>
     </div>
 
+    <!-- ГРУППА 2: Остатки -->
+    <div class="form-group">
+      <h4>Остатки</h4>
+      <input type="number" id="leftoverSize" placeholder="Размер остатка">
+      <input type="number" id="leftoverQty" placeholder="Количество остатков">
+      <button onclick="addManualLeftover()">+ Добавить остаток</button>
+    </div>
+
+    <!-- Таблица -->
     <table id="itemsTable">
       <thead>
         <tr>
@@ -31,7 +40,11 @@
       <tbody></tbody>
     </table>
 
-    <button class="calculate-btn" onclick="calculate()">Показать варианты</button>
+    <!-- Режимы расчёта -->
+    <div class="mode-buttons">
+      <button onclick="setClassicMode()">📐 Классический расчёт</button>
+      <button onclick="setBalanceMode()">⚖️ Баланс склада</button>
+    </div>
 
     <div id="result" class="result"></div>
   </div>
